@@ -1,0 +1,173 @@
+site_name: '如何使用 Go 文档'
+site_url: 'https://github.com/antflux/HowUseGo'
+site_description: 'Document'
+site_author: 'HowUseGo'
+
+repo_name: 'HowUseGo'
+repo_url: 'https://github.com/antflux/HowUseGo'
+
+edit_uri: https://github.com/HowUseGo/docs/edit/master/docs/
+theme:
+  name: 'material'
+  logo: 'img/logo-white.png'
+  favicon: 'img/facio.ico'
+  language: 'zh'
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - django
+  palette:
+    - scheme: default
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - scheme: slate
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - search.share
+    - header.autohide
+    - content.tabs.link
+    - content.code.copy
+    - content.code.annotate #代码注释
+    - content.code.select  
+  custom_dir: "theme"
+nav:
+  - 产品介绍: index.md
+  - 安装 go环境: 
+      - ubuntu 环境安装: how-to-install-go-on-ubuntu-20-04.md
+      - macos 环境安装: how-to-install-go-and-set-up-a-local-programming-environment-on-macos.md
+      - windows 环境安装: how-to-install-go-and-set-up-a-local-programming-environment-on-windows-10.md
+  - 尝试开发:
+      - 第一个项目: how-to-write-your-first-program-in-go.md
+      - 了解 gopath: understanding-the-gopath.md
+      - 如何写注释: how-to-write-comments-in-go.md
+      - 理解数据类型: understanding-data-types-in-go.md
+      - 在 Go 中使用字符串简介: an-introduction-to-working-with-strings-in-go.md
+      - 如何格式化字符串: how-to-format-strings-in-go.md
+      - Go 中的 Strings 包简介: an-introduction-to-the-strings-package-in-go.md
+      - 如何在 Go 中使用变量和常量: how-to-use-variables-and-constants-in-go.md
+      - 如何转换数据类型: how-to-convert-data-types-in-go.md
+      - 如何在 Go 中使用运算符进行数学运算: how-to-do-math-in-go-with-operators.md
+      - 理解 Go 中的布尔逻辑: understanding-boolean-logic-in-go.md
+      - 理解 Maps: understanding-maps-in-go.md
+      - 理解数组和切片: understanding-arrays-and-slices-in-go.md
+      - 捕获错误: handling-errors-in-go.md
+      - 创建自定义错误: creating-custom-erros-in-go.md
+      - 在 Go 中创建自定义错误: handling-panics-in-go.md
+      - 21 在 Go 中导入软件包: importing-packages-in-go.md
+      - 22 在 Go 中导入软件包: how-to-write-packages-in-go.md
+      - 23 了解 go中的包可见性: understanding-package-visibility-in-go.md 
+      - 24 如何在 go 中编写条件语句: how-to-write-conditional-statements-in-go.md
+      - 25 如何在 Go 中编写 Switch 语句: how-to-write-switch-statements-in-go.md
+      - 26 如何在 go 中创建 For 循环: how-to-construct-for-loops-in-go.md
+      - 27 在 Go 中使用循环时使用 Break 和 continue 语句: using-break-and-continue-statements-when-working-with-loops-in-go.md
+      - 28 如何定义和调用函数: how-to-define-and-call-functions-in-go.md
+      - 29  如何在 Go 中使用可变参数函数: how-to-use-variadic-functions-in-go.md
+      - 30 理解 Go 中的 defer : understanding-defer-in-go.md
+      - 31 了解 Go 中的 init: understanding-init-in-go.md
+      - 32 使用构建标签定制 Go 二进制文件: customizing-go-binaries-with-build-tags.md
+      - 33 了解 Go 中的指针: understanding-pointers-in-go.md
+      - 34 在 Go 中定义结构: defining-structs-in-go.md
+      - 35 在 Go 中定义方法: defining-methods-in-go.md
+      - 36 如何构建和安装 Go 程序: how-to-build-and-install-go-programs.md
+      - 37 如何在 Go 中使用结构标记 : how-to-use-struct-tags-in-go.md
+      - 38 如何使用接口: how-to-use-interfaces-in-go.md
+      - 39 为不同操作系统和架构构建 Go 应用程序: building-go-applications-for-different-operating-systems-and-architectures.md
+      - 40 使用 ldflags 为 Go 应用程序设置版本信息: using-ldflags-to-set-version-information-for-go-applications.md
+  - part2(41-50章节):
+      - 41如何在 Go 中使用标志包: part2/how-to-use-the-flag-package-in-go.md
+      - 42如何使用 Go 模块: part2/how-to-use-go-modules.md
+      - 43 如何分发 Go 模块: part2/how-to-destribute-go-modules.md
+      - 44 如何在自己的项目中使用私有 Go 模块: part2/how-to-use-a-private-go-module-in-your-own-project.md
+      - 45 如何在 Go 中同时运行多个函数: part2/how-to-run-multiple-functions-concurrently-in-go.md
+      - 46 如何为 Go 中的错误添加额外信息: part2/how-to-add-extra-information-to-errors-in-go.md
+      - 47 如何在围棋中使用日期和时间: part2/how-to-use-dates-and-times-in-go.md
+      - 48 如何在 Go 中使用上下文: part2/how-to-use-contexts-in-go.md
+      - 49 如何在 Go 中使用 JSON: part2/how-to-use-json-in-go.md
+      - 50 如何用 Go 创建 HTTP 服务器: part2/how-to-make-an-http-server-in-go.md
+      - 51 如何在 Go 中发出 HTTP 请求: part2/how-to-make-http-requests-in-go.md
+      - 52 如何在 Go 中使用泛型: part2/how-to-use-generics-in-go.md
+      - 53 如何在 Go 中使用模板: part2/how-to-use-templates-in-go.md
+  - 安全公告: securitybulletin.md
+  - 联系我们: contact.md
+
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+      linenums: False
+  - toc:
+      permalink: True
+  - footnotes
+  - attr_list
+  - def_list
+  - tables
+  - abbr
+  - md_in_html
+  - pymdownx.extra
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:pymdownx.emoji.to_png
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist
+  - pymdownx.tilde
+  - pymdownx.betterem
+  - pymdownx.progressbar
+  - lightgallery
+  - pymdownx.tabbed
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
+      auto_title: true
+      linenums_style: pymdownx-inline
+      anchor_linenums: true
+      line_spans: __span
+  - pymdownx.keys    
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+extra_css:
+  - css/extra.css
+
+copyright: Copyright &copy; 2014-2023 <a href="https://home.duoxieyun.com">杭州多协信息技术有限公司</a>, All Rights Reserved. <a href="http://www.beian.miit.gov.cn" target="_blank">浙ICP备14004134号</a>
+
+plugins:
+  - search:
+      lang:
+        - en
+        - ja
+      separator: '[\s\-\.]+'
+extra:
+  version:
+    method: mike
+
+  analytics:
+    provider: custom
+    property: foobar
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/antflux/HowUseGo
+    - icon: fontawesome/solid/envelope
+      link: mailto:nesocks@163.com
+  
