@@ -1,0 +1,480 @@
+### [介绍](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#introduction)
+
+在开发大型应用程序时，特别是在服务器软件中，有时除了函数自身工作所需的信息外，函数了解更多关于其执行环境的信息也很有帮助。例如，如果Web服务器功能正在处理特定客户端的HTTP请求，则该功能可能只需要知道客户端正在请求哪个URL来提供响应。该函数可能只接受该URL作为参数。但是，在提供响应时总是会发生一些事情，例如客户端在接收响应之前断开连接。如果提供响应的函数不知道客户端断开连接，服务器软件可能最终花费比计算永远不会使用的响应所需的更多的计算时间。
+
+在这种情况下，了解请求的上下文（如客户端的连接状态）允许服务器在客户端断开连接后停止处理请求。这节省了忙碌服务器上的宝贵计算资源，并释放它们来处理另一个客户端的请求。这种类型的信息在函数需要时间执行的其他上下文中也很有帮助，例如进行数据库调用。为了使这种类型的信息无处不在，Go语言在其标准库中包含了一个`context`包。
+
+在本教程中，您将从创建一个在函数中使用上下文的Go程序开始。然后，您将更新该程序，以便在上下文中存储其他数据，并从另一个函数中检索这些数据。最后，您将使用上下文的能力来发出它已经完成的信号，以停止处理其他数据。
+
+## [先决条件](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#prerequisites)
+
+- Go 1.16或更高版本已安装。要设置此设置，请按照[如何](https://www.digitalocean.com/community/tutorials/how-to-install-go-on-ubuntu-20-04)为您的操作系统安装Go教程。
+- 对goroutines和channels的理解，你可以在教程中找到，[如何在Go中并发运行多个函数](https://www.digitalocean.com/community/tutorials/how-to-run-multiple-functions-concurrently-in-go)。
+- 熟悉在Go中使用日期和时间，您可以在教程中找到，[如何在Go中使用日期和时间](https://www.digitalocean.com/community/tutorials/how-to-use-dates-and-times-in-go)。
+- 使用`switch`语句的经验，你可以在教程中阅读更多关于[如何在Go中编写Switch语句](https://www.digitalocean.com/community/tutorials/how-to-write-switch-statements-in-go)。
+
+## [创建上下文](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#creating-a-context)
+
+Go语言中的许多函数都使用`context`包来收集关于它们执行环境的额外信息，并且通常会将该上下文提供给它们也调用的函数。通过使用`context.Context`包中的`context`接口并将其从函数传递到函数，程序可以从程序的开始函数（如`main`）一直传递该信息，直到程序中最深层的函数调用。例如，[`Context`](https://pkg.go.dev/net/http#Request)的[`http.Request`](https://pkg.go.dev/net/http#Request.Context)函数将提供一个`context.Context`，其中包括有关发出请求的客户端的信息，如果客户端在请求完成之前断开连接，则会结束。通过将这个`context.Context`值传递给一个函数，然后调用[`QueryContext`](https://pkg.go.dev/database/sql#DB)的[`sql.DB`](https://pkg.go.dev/database/sql#DB.QueryContext)函数，如果数据库查询在客户端断开连接时仍在运行，那么它也将停止。
+
+在本节中，您将创建一个带有函数的程序，该函数接收上下文作为参数。您还将使用由`context.TODO`和`context.Background`函数创建的空上下文来调用该函数。
+
+要开始在程序中使用上下文，您需要有一个目录来保存程序。许多开发人员将他们的项目保存在一个目录中，以保持它们的组织性。在本教程中，您将使用名为`projects`的目录。
+
+首先，创建`projects`目录并导航到它：
+
+```bash
+mkdir projects
+cd projects
+```
+
+副本
+
+接下来，为您的项目创建目录。在这种情况下，使用目录`contexts`：
+
+```bash
+mkdir contexts
+cd contexts
+```
+
+副本
+
+在`contexts`目录中，使用`nano`或您最喜欢的编辑器打开`main.go`文件：
+
+```bash
+nano main.go
+```
+
+副本
+
+在`main.go`文件中，您将创建一个接受`doSomething`作为参数的`context.Context`函数。然后，您将添加一个`main`函数，该函数创建一个上下文并使用该上下文调用`doSomething`。
+
+在`main.go`中添加以下行：
+
+projects/context/main.go
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+)
+
+func doSomething(ctx context.Context) {
+	fmt.Println("Doing something!")
+}
+
+func main() {
+	ctx := context.TODO()
+	doSomething(ctx)
+}
+```
+
+副本
+
+在`main`函数中，您使用了`context.TODO`函数，这是创建空（或起始）上下文的两种方法之一。当您不确定要使用哪个上下文时，可以将其用作占位符。
+
+在这段代码中，您添加的`doSomething`函数接受`context.Context`作为其唯一的参数，即使它还没有对它做任何事情。变量名为`ctx`，通常用于上下文值。我们还建议将`context.Context`参数作为函数中的第一个参数，您将在Go标准库中看到它。但这还不适用，因为它是`doSomething`的唯一参数。
+
+要运行您的程序，请在`go run`文件上使用`main.go`命令：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+Doing something!
+```
+
+输出显示您的函数被调用并使用`Doing something!`函数打印`fmt.Println`。
+
+现在，再次打开`main.go`文件，并更新程序以使用第二个函数，该函数将创建一个空上下文，`context.Background`：
+
+projects/context/main.go
+
+```go
+...
+
+func main() {
+	ctx := context.Background()
+	doSomething(ctx)
+}
+```
+
+副本
+
+`context.Background`函数像`context.TODO`一样创建一个空上下文，但它被设计用于您打算启动一个已知上下文的地方。从根本上说，这两个函数做的是相同的事情：它们返回一个空的上下文，可以用作`context.Context`。最大的区别在于你如何向其他开发人员传达你的意图。如果您不确定使用哪一个，`context.Background`是一个很好的默认选项。
+
+现在，使用`go run`命令再次运行程序：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+Doing something!
+```
+
+您的输出将是相同的，因为代码的功能没有改变，只是开发人员在阅读代码时看到的内容。
+
+在本节中，您使用`context.TODO`和`context.Background`函数创建了一个空上下文。但是，如果空的上下文保持这种状态，它对您来说并不完全有用。你可以将它们传递给其他函数来使用，但是如果你想在自己的代码中使用它们，到目前为止你所拥有的只是一个空的上下文。要向上下文添加更多信息，可以做的一件事是添加可以在其他函数中从上下文检索的数据，这将在下一节中进行。
+
+## [在上下文中使用数据](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#using-data-within-a-context)
+
+在程序中使用`context.Context`的一个好处是能够访问存储在上下文中的数据。通过将数据添加到上下文并将上下文从函数传递到函数，程序的每一层都可以添加有关正在发生的事情的附加信息。例如，第一函数可以将用户名添加到上下文。下一个函数可以将文件路径添加到用户试图访问的内容。最后，第三个函数可以从系统磁盘读取文件，并记录它是否成功加载以及哪个用户试图加载它。
+
+要向上下文添加新值，请使用`context.WithValue`包中的`context`函数。该函数接受三个参数：parent `context.Context`、key和value。父上下文是要添加值的上下文，同时保留有关父上下文的所有其他信息。然后使用键从上下文中检索值。键和值可以是任何数据类型，但本教程将使用`string`键和值。然后，`context.WithValue`将返回一个新的`context.Context`值，其中添加了值。
+
+一旦你有了一个添加了值的`context.Context`，你就可以使用`Value`的`context.Context`方法来访问这些值。为`Value`方法提供一个键将返回存储的值。
+
+现在，再次打开`main.go`文件并更新它，使用`context.WithValue`向上下文添加一个值。然后，更新`doSomething`函数，使用`fmt.Printf`将该值打印到输出：
+
+projects/context/main.go
+
+```go
+...
+
+func doSomething(ctx context.Context) {
+	fmt.Printf("doSomething: myKey's value is %s\n", ctx.Value("myKey"))
+}
+
+func main() {
+	ctx := context.Background()
+
+	ctx = context.WithValue(ctx, "myKey", "myValue")
+
+	doSomething(ctx)
+}
+```
+
+副本
+
+在这段代码中，您将把新的上下文赋回用于保存父上下文的`ctx`变量。如果您没有理由引用特定的父上下文，这是一种相对常见的模式。如果确实需要访问父上下文，可以将此值赋给一个新变量，稍后您将看到这一点。
+
+要查看程序的输出，请使用`go run`命令运行它：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+doSomething: myKey's value is myValue
+```
+
+在输出中，您将看到您在上下文中存储的来自`main`函数的值现在也可以在`doSomething`函数中使用。在服务器上运行的大型程序中，该值可以是类似于程序开始运行的时间或程序运行的服务器。
+
+在使用上下文时，重要的是要知道存储在特定`context.Context`中的值是不可变的，这意味着它们不能被更改。当你调用`context.WithValue`时，你传入了父上下文，也收到了返回的上下文。您收到了返回的上下文，因为`context.WithValue`函数没有修改您提供的上下文。相反，它将您的父上下文包装在另一个具有新值的上下文中。
+
+要了解这是如何工作的，请更新您的`main.go`文件以添加一个新的`doAnother`函数，该函数接受`context.Context`并从上下文中打印出`myKey`值。然后，更新`doSomething`以在上下文中设置其自己的`myKey`值（`anotherValue`），并使用结果`doAnother`上下文调用`anotherCtx`。最后，让`doSomething`再次从其原始上下文中打印出`myKey`值：
+
+projects/context/main.go
+
+```go
+...
+
+func doSomething(ctx context.Context) {
+	fmt.Printf("doSomething: myKey's value is %s\n", ctx.Value("myKey"))
+
+	anotherCtx := context.WithValue(ctx, "myKey", "anotherValue")
+	doAnother(anotherCtx)
+
+	fmt.Printf("doSomething: myKey's value is %s\n", ctx.Value("myKey"))
+}
+
+func doAnother(ctx context.Context) {
+	fmt.Printf("doAnother: myKey's value is %s\n", ctx.Value("myKey"))
+}
+
+...
+```
+
+副本
+
+接下来，使用`go run`命令再次运行程序：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+doSomething: myKey's value is myValue
+doAnother: myKey's value is anotherValue
+doSomething: myKey's value is myValue
+```
+
+这次在输出中，您将看到两行来自`doSomething`函数，一行来自`doAnother`函数。在`main`函数中，将`myKey`设置为值`myValue`并将其传递给`doSomething`函数。你可以在输出中看到，`myValue`使它成为函数。
+
+然而，下一行显示，当您在`context.WithValue`中使用`doSomething`将`myKey`设置为`anotherValue`并将结果`anotherCtx`上下文传递给`doAnother`时，新值覆盖了初始值。
+
+最后，在最后一行，您将看到当您再次从原始上下文打印出`myKey`值时，该值仍然是`myValue`。由于`context.WithValue`函数只包装了父上下文，因此父上下文仍然具有与最初相同的所有值。当你在上下文中使用`Value`方法时，它会找到给定键的最外层包装值并返回该值。在你的代码中，当你为`anotherCtx.Value`调用`myKey`时，它将返回`anotherValue`，因为它是上下文的最外层包装值，有效地覆盖了任何其他被包装的`myKey`值。当您在`ctx.Value`中再次调用`doSomething`时，`anotherCtx`并没有包装`ctx`，因此返回原始的`myValue`值。
+
+注意事项：上下文可以是一个强大的工具，它可以保存所有的值，但是需要在存储在上下文中的数据和作为参数传递给函数的数据之间取得平衡。将所有数据放在一个上下文中并在函数中使用该数据而不是参数似乎很诱人，但这可能导致代码难以阅读和维护。一个好的经验法则是，函数运行所需的任何数据都应该作为参数传递。例如，有时候，在上下文值中保留诸如用户名之类的值可能很有用，以便在以后记录信息时使用。但是，如果用户名用于确定函数是否应该显示某些特定信息，则您希望将其作为函数参数包含在内，即使它已经可以从上下文中获得。这样，当您或其他人将来查看函数时，更容易看到实际使用的数据。
+
+在本节中，您更新了程序以在上下文中存储值，然后包装该上下文以重写该值。但是，正如前面的示例中所提到的，这并不是工具上下文所能提供的唯一有价值的东西。它们也可以用来通知程序的其他部分何时应该停止处理，以避免不必要的资源使用。
+
+## [结束上下文](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#ending-a-context)
+
+`context.Context`提供的另一个强大的工具是一种方法，可以向使用它的任何函数发出信号，表明上下文已经结束，应该被认为是完整的。通过向这些函数发出上下文已完成的信号，它们知道停止处理与上下文相关的任何工作，它们可能仍然在工作。使用上下文的这个特性可以让程序更有效，因为即使结果会被抛出，处理时间也可以用于其他事情，而不是完全完成每个函数。例如，如果一个网页请求到达您的Go Web服务器，用户可能会在页面完成加载之前点击“停止”按钮或关闭浏览器。如果他们请求的页面需要运行一些数据库查询，即使数据不会被使用，服务器也可以运行查询。但是，如果你的函数使用了`context.Context`，你的函数将知道上下文已经完成，因为Go的Web服务器将取消它，并且它们可以跳过运行任何其他尚未运行的数据库查询。这将释放Web服务器和数据库服务器的处理时间，因此它可以用于不同的请求。
+
+在本节中，您将更新您的程序以告知上下文何时完成，并使用三种不同的方法结束上下文。
+
+### [确定上下文是否完成](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#determining-if-a-context-is-done)
+
+无论上下文结束的原因是什么，确定上下文是否完成的方式都是一样的。`context.Context`类型提供了一个名为`Done`的方法，可以检查上下文是否已经结束。这个方法返回[一个](https://www.digitalocean.com/community/tutorials/how-to-run-multiple-functions-concurrently-in-go#communicating-safely-between-goroutines-with-channels)在上下文完成时关闭的通道，任何监视它关闭的函数都会知道它们应该认为它们的执行上下文完成了，并且应该停止与上下文相关的任何处理。`Done`方法之所以有效，是因为没有值被写入到它的通道中，当通道关闭时，该通道将开始为每次读取尝试返回`nil`值。通过定期检查`Done`通道是否已经关闭，并在其间进行处理工作，您可以实现一个可以工作的函数，但也知道它是否应该提前停止处理。将这些处理工作、`Done`通道的定期检查和`select`语句结合在一起，可以让您同时向其他通道发送数据或从其他通道接收数据。
+
+Go语言中的[`select`](https://go.dev/ref/spec#Select_statements)语句用于允许程序尝试同时对多个通道进行阅读或写操作。每个`select`语句只发生一个通道操作，但是当在循环中执行时，程序可以在一个通道操作可用时执行多个通道操作。使用关键字`select`创建`select`语句，后跟一个用花括号（`{}`）括起来的代码块，代码块中有一个或多个`case`语句。每个`case`语句可以是通道读或写操作，而`select`语句将阻塞，直到其中一个`case`语句可以执行。假设您不希望`select`语句阻塞。在这种情况下，您还可以添加一个`default`语句，如果其他`case`语句都无法执行，该语句将立即执行。它的外观和工作方式类似于`switch`语句，但用于通道。
+
+下面的代码示例显示了如何在长期运行的函数中使用`select`语句，该函数从通道接收结果，但也监视上下文的`Done`通道何时关闭：
+
+```go
+ctx := context.Background()
+resultsCh := make(chan *WorkResult)
+
+for {
+	select {
+	case <- ctx.Done():
+		// The context is over, stop processing results
+		return
+	case result := <- resultsCh:
+		// Process the results received
+	}
+}
+```
+
+副本
+
+在这段代码中，`ctx`和`resultsCh`的值通常会作为参数传递到函数中，`ctx`是函数执行的`context.Context`，`resultsCh`是来自其他地方的工作goroutine的结果的只读通道。每次运行`select`语句时，Go将停止运行该函数并监视所有`case`语句。当其中一个`case`语句可以执行时，无论是在`resultsCh`的情况下从通道中进行阅读，还是在`Done`的情况下向通道中进行写入，还是关闭通道，都会执行`select`语句的分支。但是，如果多个语句可以同时运行，则不能保证`case`语句的执行顺序。
+
+对于本例中的代码执行，`for`循环将永远继续，直到`ctx.Done`通道关闭，因为唯一的`return`语句位于`case`语句中。即使`case <- ctx.Done`不给任何变量赋值，它仍然会在`ctx.Done`关闭时被触发，因为通道仍然有一个值，即使它被忽略也可以读取。如果`ctx.Done`通道没有关闭，`select`语句将等待，直到它关闭，或者如果`resultsCh`有一个可以读取的值。如果可以读取`resultsCh`，则将执行`case`语句的代码块。由于没有保证的顺序，如果两者都可以读取，那么执行哪一个似乎是随机的。
+
+如果示例的`select`语句有一个没有任何代码的`default`分支，它实际上不会改变代码的工作方式，它只会导致`select`语句立即结束，而`for`循环将开始`select`语句的另一次迭代。这导致`for`循环执行得非常快，因为它永远不会停止并等待从通道读取。当这种情况发生时，`for`循环被称为[忙碌循环](https://en.wikipedia.org/wiki/Busy_waiting)，因为循环不是等待某些事情发生，而是一遍又一遍地运行忙碌。这可能会消耗大量的CPU，因为程序永远没有机会停止运行以让其他代码执行。不过，有时候这个功能是有用的，例如，如果您想在执行另一个非通道操作之前检查通道是否准备好执行某些操作。
+
+由于在示例代码中退出`for`循环的唯一方法是关闭由`Done`返回的通道，而关闭`Done`通道的唯一方法是结束上下文，因此您需要一种结束上下文的方法。Go `context`包根据你的目标提供了几种方法，最直接的选择是调用一个函数来“取消”上下文。
+
+### [取消上下文](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#canceling-a-context)
+
+取消上下文是结束上下文的最直接和最可控的方式。类似于使用`context.WithValue`在上下文中包含值，可以使用`context.WithCancel`函数将“cancel”函数与上下文相关联。此函数接收父上下文作为参数，并返回新上下文以及可用于取消返回的上下文的函数。同样，与`context.WithValue`类似，调用cancel函数返回的内容只会取消返回的上下文和任何使用它作为父上下文的上下文。这并不能阻止父上下文被取消，它只是意味着调用自己的cancel函数不会这样做。
+
+现在，打开你的`main.go`文件并更新你的程序以使用`context.WithCancel`和cancel函数：
+
+projects/context/main.go
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
+func doSomething(ctx context.Context) {
+	ctx, cancelCtx := context.WithCancel(ctx)
+	
+	printCh := make(chan int)
+	go doAnother(ctx, printCh)
+
+	for num := 1; num <= 3; num++ {
+		printCh <- num
+	}
+
+	cancelCtx()
+
+	time.Sleep(100 * time.Millisecond)
+
+	fmt.Printf("doSomething: finished\n")
+}
+
+func doAnother(ctx context.Context, printCh <-chan int) {
+	for {
+		select {
+		case <-ctx.Done():
+			if err := ctx.Err(); err != nil {
+				fmt.Printf("doAnother err: %s\n", err)
+			}
+			fmt.Printf("doAnother: finished\n")
+			return
+		case num := <-printCh:
+			fmt.Printf("doAnother: %d\n", num)
+		}
+	}
+}
+
+...
+```
+
+副本
+
+首先，为`time`包添加一个导入，并更改`doAnother`函数以接受一个新的数字通道并打印到屏幕上。接下来，在`select`循环中使用`for`语句来读取该通道以及上下文的`Done`方法。然后，在`doSomething`函数中，创建一个可以取消的上下文以及一个发送数字的通道，并以这些参数作为goroutine运行`doAnother`。最后，您向通道发送几个数字并取消上下文。
+
+要查看这段代码的运行情况，请像以前一样使用`go run`命令：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+doAnother: 1
+doAnother: 2
+doAnother: 3
+doAnother err: context canceled
+doAnother: finished
+doSomething: finished
+```
+
+在这个更新的代码中，你的`doSomething`函数的行为就像一个函数，它将工作发送给一个或多个从工作通道阅读[的goroutine](https://www.digitalocean.com/community/tutorials/how-to-run-multiple-functions-concurrently-in-go)。在本例中，`doAnother`是worker，打印数字是它正在做的工作。一旦`doAnother` goroutine启动，`doSomething`就开始发送要打印的数字。在`doAnother`函数中，`select`语句等待`ctx.Done`通道关闭或等待`printCh`通道接收到一个数字。`doSomething`函数在通道上发送三个数字，为每个数字触发`fmt.Printf`，然后调用`cancelCtx`函数取消上下文。`doAnother`函数从通道中读取三个数字后，将等待下一个通道操作。由于下一个发生的事情是`doSomething`调用`cancelCtx`，所以调用`ctx.Done`分支。
+
+当调用`ctx.Done`分支时，代码使用`Err`提供的`context.Context`函数来确定上下文如何结束。由于您的程序使用`cancelCtx`函数来取消上下文，因此您在输出中看到的错误是`context canceled`。
+
+注意：如果你之前运行过Go程序并查看过日志输出，你可能在过去看到过`context canceled`错误。当使用Go[http](https://pkg.go.dev/net/http)包时，当客户端在服务器处理完整响应之前断开与服务器的连接时，这是一个常见的错误。
+
+一旦`doSomething`函数取消了上下文，它就使用`time.Sleep`函数等待一小段时间，以便给予`doAnother`时间来处理取消的上下文并完成运行。之后，它退出函数。在许多情况下，`time.Sleep`不是必需的，但它是必需的，因为示例代码执行得如此之快。如果没有包含`time.Sleep`，程序可能会在您在屏幕上看到程序的其余输出之前结束。
+
+当你想精确控制上下文何时结束时，`context.WithCancel`函数和它返回的cancel函数是最有用的，但有时你不想或不需要那么多的控制。在`context`包中，下一个可用于结束上下文的函数是`context.WithDeadline`，它是第一个自动结束上下文的函数。
+
+### [给上下文一个截止日期](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#giving-a-context-a-deadline)
+
+在上下文中使用`context.WithDeadline`允许您设置上下文需要完成的最后期限，当最后期限过去时，它将自动结束。为上下文设定最后期限类似于为自己设定最后期限。你告诉上下文它需要完成的时间，如果超过了这个时间，Go会自动取消上下文。
+
+要在上下文上设置截止日期，请使用`context.WithDeadline`函数并为其提供父上下文和用于何时取消上下文的`time.Time`值。然后，您将收到一个新的上下文和一个用于取消新上下文的函数作为返回值。与`context.WithCancel`类似，当超过截止日期时，它只会影响新上下文和任何其他使用它作为父上下文的上下文。上下文也可以通过调用cancel函数手动取消，就像您对`context.WithCancel`所做的那样。
+
+接下来，打开您的`main.go`文件并将其更新为使用`context.WithDeadline`而不是`context.WithCancel`：
+
+projects/context/main.go
+
+```go
+...
+
+func doSomething(ctx context.Context) {
+	deadline := time.Now().Add(1500 * time.Millisecond)
+	ctx, cancelCtx := context.WithDeadline(ctx, deadline)
+	defer cancelCtx()
+
+	printCh := make(chan int)
+	go doAnother(ctx, printCh)
+
+	for num := 1; num <= 3; num++ {
+		select {
+		case printCh <- num:
+			time.Sleep(1 * time.Second)
+		case <-ctx.Done():
+			break
+		}
+	}
+
+	cancelCtx()
+
+	time.Sleep(100 * time.Millisecond)
+
+	fmt.Printf("doSomething: finished\n")
+}
+
+...
+```
+
+副本
+
+更新后的代码现在使用`context.WithDeadline`中的`doSomething`在函数启动后1500毫秒（1.5秒）自动取消上下文，方法是使用`time.Now`函数。除了更新上下文的完成方式之外，还进行了一些其他更改。由于代码现在可以通过直接调用`cancelCtx`或通过截止日期自动取消来结束，因此`doSomething`函数已更新为使用`select`语句在通道上发送数字。这样，如果从`printCh`（在本例中为`doAnother`）阅读的内容不是从通道中阅读的内容，并且`ctx.Done`通道已关闭，则`doSomething`函数也会注意到它并停止尝试发送数字。
+
+您还将注意到`cancelCtx`被调用了两次，一次是通过新的`defer`语句，另一次是在它之前的位置。`defer cancelCtx()`并不一定是必需的，因为另一个调用将始终运行，但保留它可能很有用，以防将来有任何`return`语句导致它被遗漏。当上下文从截止日期取消时，仍然需要调用cancel函数以清理使用的任何资源，因此这更像是一种安全措施。
+
+现在，使用`go run`再次运行程序：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+doAnother: 1
+doAnother: 2
+doAnother err: context deadline exceeded
+doAnother: finished
+doSomething: finished
+```
+
+这一次在输出中，您将看到在打印所有三个数字之前，由于`context deadline exceeded`错误，上下文被取消。由于在`doSomething`功能开始运行后将截止时间设置为1.5秒，而在发送每个号码后将`doSomething`设置为等待1秒，因此在打印第三个号码之前将超过截止时间。一旦超过截止日期，`doAnother`和`doSomething`函数都会结束运行，因为它们都在等待`ctx.Done`通道关闭。您还可以调整添加到`time.Now`的时间量，以查看各种截止日期如何影响输出。如果最后期限达到或超过3秒，您甚至可以看到错误更改回`context canceled`错误，因为不再超过最后期限。
+
+如果你过去使用过Go应用程序或查看过它们的日志，你可能也会熟悉`context deadline exceeded`错误。此错误在需要一些时间才能完成向客户端发送响应的Web服务器中很常见。如果数据库查询或某些处理需要很长时间，则可能导致Web请求的时间长于服务器允许的时间。一旦请求超过限制，请求的上下文将被取消，您将看到`context deadline exceeded`错误消息。
+
+使用`context.WithDeadline`而不是`context.WithCancel`结束上下文允许您指定上下文需要结束的特定时间，而无需自己跟踪该时间。如果您知道`time.Time`何时上下文应该结束，那么`context.WithDeadline`可能是管理上下文端点的一个很好的候选者。其他时候，您不关心上下文结束的具体时间，您只知道希望它在开始后一分钟结束。使用`context.WithDeadline`和其他`time`包函数和方法可以做到这一点，但Go也提供了`context.WithTimeout`函数，使这项工作更容易。
+
+### [给上下文一个时间限制](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#giving-a-context-a-time-limit)
+
+在`context.WithTimeout`附近，`context.WithDeadline`函数几乎可以被认为是一个更有用的函数。使用`context.WithDeadline`，你提供了一个特定的`time.Time`来结束上下文，但是使用`context.WithTimeout`函数，你只需要提供一个`time.Duration`值来表示你希望上下文持续多久。这将是你在许多情况下要寻找的，但如果你需要指定一个`context.WithDeadline`，`time.Time`是可用的。如果没有`context.WithTimeout`，你需要自己使用`time.Now()`和`time.Time`的`Add`方法来获得特定的结束时间。
+
+最后一次，打开您的`main.go`文件并将其更新为使用`context.WithTimeout`而不是`context.WithDeadline`：
+
+projects/context/main.go
+
+```go
+...
+
+func doSomething(ctx context.Context) {
+	ctx, cancelCtx := context.WithTimeout(ctx, 1500*time.Millisecond)
+	defer cancelCtx()
+
+	...
+}
+
+...
+```
+
+副本
+
+更新并保存文件后，使用`go run`运行它：
+
+```bash
+go run main.go
+```
+
+副本
+
+输出将类似于以下内容：
+
+```
+Output
+doAnother: 1
+doAnother: 2
+doAnother err: context deadline exceeded
+doAnother: finished
+doSomething: finished
+```
+
+这次运行程序时，您应该看到与使用`context.WithDeadline`时相同的输出。错误消息甚至是相同的，告诉你`context.WithTimeout`实际上只是一个包装器，为你做`time.Now`数学。
+
+在本节中，您更新了程序，以使用三种不同的方式结束`context.Context`。第一个是`context.WithCancel`，允许你调用一个函数来取消上下文。接下来，您使用了带有`context.WithDeadline`值的`time.Time`来在某个时间自动结束上下文。最后，您使用了`context.WithTimeout`和一个`time.Duration`值来在经过一定时间后自动结束上下文。使用这些函数，您将能够确保您的程序不会消耗超过计算机所需的资源。了解它们导致上下文返回的错误也会使您自己和其他Go程序中的错误更容易解决。
+
+## [结论](https://www.digitalocean.com/community/tutorials/how-to-use-contexts-in-go#conclusion)
+
+在本教程中，您创建了一个程序，以各种方式与Go的`context`包进行交互。首先，您创建了一个接受`context.Context`值作为参数的函数，并使用`context.TODO`和`context.Background`函数创建空上下文。之后，您使用`context.WithValue`将值添加到新上下文，并使用`Value`方法在其他函数中检索它们。最后，您使用了上下文的`Done`方法来确定上下文何时完成运行。当与函数`context.WithCancel`、`context.WithDeadline`和`context.WithTimeout`配对时，您实现了自己的上下文管理，以设置使用这些上下文的代码应运行多长时间的限制。
